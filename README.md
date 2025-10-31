@@ -2,9 +2,12 @@
 
 ## Introduction
 
+
+The goal is to provide a simple implementation of scep in Vault and to show with a linux scep client how it works.
+
 This repo is made of a folder (scep-data) and some terraform files, and a dockerfile.
-The terraform files will be processed by `terraform init`, then `terraform plan` and finally `terraform apply -auto-approve` to configure your local VAULT ENTERPRISE server.
-I assume you already have a valid license for VAULT ENTERPRISE.
+
+Note: this configuration is NOT designed for production.
 
 ## Prerequisites
 Before moving forward you should:
@@ -12,6 +15,7 @@ Before moving forward you should:
  - init, unseal your vault enterprise server
     - export your root token
  - `cd`in the directory of the terraform files
+ - create a `scep-data`repo in this current dir
 
 ## Building the docker scep image
 The docker image comes from the sscep (simple scep client) from [certnanny](https://github.com/certnanny/sscep)
@@ -62,6 +66,31 @@ Renewal
  - It a certificate is not preinstalled, it is a Trust On First Use: the client must trust the certificate he received from the initial request.
 
  **We do recommend the usage of a configuration management solution to properly configure scep endpoints with the expected certificate of the CA expected to sign the csr**
+
+4. The client creates and sends a csr
+- with `openssl` a command like the following will be enough:
+`openssl req -new -newkey rsa:2048 -keyout client.key -out client.csr`. 
+**Please note answering the questions that you MUST provide a challenge password that matches the one configured in the terraform variables**
+- or you can also use the `mkrequest`command from certnanny (see above). In this case, you will get as outputs the files `local.csr`, `local.key`
+
+- to send the csr to the scep server the 'general' scep command used is:
+`./sscep enroll -u http://vault:8201/v1/pki_int/scep -c ca.crt -k local.key -r local.csr -l local.crt`
+  - -c: where to find the CA certificate
+  - -k: what is the local key used to sign
+  - -r: where to find the csr
+  - -l: where to write the signed certificate
+
+At that point, the *delegated authentication mechanism* in vault takes place.
+The workflow is the following:
+ - the scep client sends its CSR (encrypted with the intermediate CA pub key)
+ - this CSR contains the `challengePassword``
+ - the `/pki_int/scep`endpoint receives the request
+ - vault decrypts the CSR, and because it is configured, it sends an auth request to the `auth/scep` auth backend. The *challengePassword* is included in the request
+ - vault can then validate the auth request, and if everything is ok, its sends back a token with policies attached. In our example, the policy is *scep-auth-policy* and allows to `read, create, update` the `pki_int/scep` endpoint.
+ - additionnally the token comes with a TTL and max_TTL: that's another guarantee that if not used quickly, the token will not be usefull.
+ - then, if everything is ok (ie if the token allows for the cert signature, ...) the vault scep engine validates the request.
+ - then it passes the csr to the pki_int mount, which signs it with what is specified in its associated role (in our case the role is pretty generic and allows for all signatures)
+ - at the end, the scep server sends back the certificate to the client.
 
 
 ## Time to play
