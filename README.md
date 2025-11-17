@@ -47,7 +47,7 @@ terraform apply -auto-approve
 ````
 make sure that the ouptut of the plan is correct before moving the the apply phase :-) 
 
-## Vault <-> SCEP interactions (before playing)
+## Vault <-> SCEP workflow 
 1. Usefull or not, but you can check the scep server (here: vault enterprise) capabilities.  
 That's the command `GetCaCaps`.  
 It should return something like: 
@@ -107,7 +107,11 @@ docker run -it --rm \
   ````
 the `-v` means verbose, the `-u` means to which host you want to talk, and the `-c` tells the client to write validated certifiate data in this directory
 (note that the directory is mapped to /data in the container)
-If your CA Chain is made of a root and an intermediate you should end up with 2 files in the `scep-data` directory: `ca.pem-0` and `ca.pem-1``
+If your CA Chain is made of a root and an intermediate you should end up with 2 files in the `scep-data` directory: `ca.pem-0` and `ca.pem-1`
+
+You can verify the content of the certificate with the following command:
+`openssl verify -in ca.pem -noout -text``
+
 Now that this is done, you should generate a certificate, and then ask scep to enroll it.
 To do this, multiple ways: either `openssl` or `mkrequest` from certnanny (I'm using this one). Here is the command:
  

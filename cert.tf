@@ -5,7 +5,7 @@ resource "vault_mount" "pki_root" {
   type        = "pki"
   description = "ROOT PKI mount"
 
-  default_lease_ttl_seconds = 86400
+  #default_lease_ttl_seconds = 86400
 }
 
 #2.Create a self-signed root
@@ -15,6 +15,7 @@ resource "vault_pki_secret_backend_root_cert" "root" {
     type = "internal"
     common_name = "scep-example.com"
     issuer_name = "root-issuer"
+    ttl = "87600h"
 }
 ## Display the value of the self-signed root in the output
 output "vault_pki_secret_backend_root_cert_root" {
@@ -68,7 +69,7 @@ resource "vault_mount" "pki_int" {
   path        = "pki_int"
   type        = "pki"
   description = "This is an example intermediate PKI mount"
-  default_lease_ttl_seconds = 43200
+  #default_lease_ttl_seconds = 43200
 }
 #Generate intermediate, save the CSR and sign it.
 resource "vault_pki_secret_backend_intermediate_cert_request" "csr-request" {
@@ -116,7 +117,7 @@ resource "vault_pki_secret_backend_role" "scep-role" {
   #allow_ip_sans    = true
   key_type         = "rsa"
   key_bits         = 4096
-  #allowed_domains  = ["docker.internal", "local"]
+  allowed_domains  = ["*.scep-example.com"]
   #allow_subdomains = true
 }
 
@@ -134,11 +135,11 @@ resource "vault_pki_secret_backend_config_scep" "scep" {
   authenticators {
     scep = {
       accessor  = vault_auth_backend.scep.accessor
-      scep_role = vault_scep_auth_backend_role.scep.name 
+      scep_role = vault_scep_auth_backend_role.scep.name
     }
     cert = {
       accessor  = vault_auth_backend.cert.accessor
       cert_role = vault_cert_auth_backend_role.cert.name
-    }
   }
+}
 }
