@@ -4,6 +4,7 @@ resource "vault_mount" "pki_root" {
   path        = "pki-root"
   type        = "pki"
   description = "ROOT PKI mount"
+  max_lease_ttl_seconds = 315360000 # 10 years
 
   #default_lease_ttl_seconds = 86400
 }
@@ -55,9 +56,9 @@ resource "vault_pki_secret_backend_role" "root_role" {
 resource "vault_pki_secret_backend_config_urls" "root-urls" {
   namespace               = vault_namespace.scep-example.path
   backend                 = vault_mount.pki_root.path
-  issuing_certificates    = ["http://localhost:8200/v1/pki-root/ca"]
-  crl_distribution_points = ["http://localhost:8200/v1/pki-root/crl"]
-  ocsp_servers            = ["http://localhost:8200/va/pki-root/ocsp"  ]
+  issuing_certificates    = ["${var.vault_addr}/v1/${var.vault_scep_namespace}/pki-root/ca"]
+  crl_distribution_points = ["${var.vault_addr}/v1/${var.vault_scep_namespace}/pki-root/crl"]
+  ocsp_servers            = ["${var.vault_addr}/v1/${var.vault_scep_namespace}/pki-root/ocsp"  ]
 }
 
 ## We're done for the root CA config
@@ -69,7 +70,9 @@ resource "vault_mount" "pki_int" {
   path        = "pki_int"
   type        = "pki"
   description = "This is an example intermediate PKI mount"
-  #default_lease_ttl_seconds = 43200
+  default_lease_ttl_seconds = 2592000 #30 days
+  max_lease_ttl_seconds = 94608000 # 3 years
+  delegated_auth_accessors = [vault_auth_backend.scep.accessor, vault_auth_backend.cert.accessor]
 }
 #Generate intermediate, save the CSR and sign it.
 resource "vault_pki_secret_backend_intermediate_cert_request" "csr-request" {
@@ -85,7 +88,7 @@ resource "vault_pki_secret_backend_root_sign_intermediate" "intermediate" {
     common_name = "scep-example.com Intermediate Authority"
     csr         = vault_pki_secret_backend_intermediate_cert_request.csr-request.csr
     format      = "pem_bundle"
-    ttl         = "43800h"
+    ttl         = "26280h"
     issuer_ref  = vault_pki_secret_backend_issuer.root.issuer_id 
 }
 
@@ -121,7 +124,14 @@ resource "vault_pki_secret_backend_role" "scep-role" {
   #allow_subdomains = true
 }
 
-
+# crl, ca and oscp urls configuration
+resource "vault_pki_secret_backend_config_urls" "int-urls" {
+  namespace               = vault_namespace.scep-example.path
+  backend                 = vault_mount.pki_int.path
+  issuing_certificates    = ["${var.vault_addr}/v1/${var.vault_scep_namespace}/pki_int/ca"]
+  crl_distribution_points = ["${var.vault_addr}/v1/${var.vault_scep_namespace}/pki_int/crl"]
+  ocsp_servers            = ["${var.vault_addr}/v1/${var.vault_scep_namespace}/pki_int/ocsp"]
+}
 # Finally we will configure auth delegation in the pki-int engine
 # As it depends on the auth backends declared in scep-auth.tf, and to make sure
 # everything runs smoothly I add some depends_on cosntructs

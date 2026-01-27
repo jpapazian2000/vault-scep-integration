@@ -19,8 +19,8 @@ resource "vault_cert_auth_backend_role" "cert" {
     certificate    = vault_pki_secret_backend_root_sign_intermediate.intermediate.certificate
     backend        = vault_auth_backend.cert.path
     allowed_names  = ["scep-example.com", "printer.scep-example.com", "rtr.scep-example.com"]
-    token_ttl      = 300
-    token_max_ttl  = 600
+    #token_ttl      = 300
+    #token_max_ttl  = 600
     token_type     = "batch"
     token_policies = [vault_policy.scep-auth.name]
 }
@@ -30,9 +30,9 @@ resource "vault_scep_auth_backend_role" "scep" {
     backend        = vault_auth_backend.scep.path
     name           = "scep_challenge_role"
     auth_type      = "static-challenge"
-    challenge      = "${var.scep_password}"
+    challenge      = var.scep_password
     token_type     = "batch"
-    token_ttl      = 300
-    token_max_ttl  = 600
+    #token_ttl      = 300
+    #token_max_ttl  = 600
     token_policies = [vault_policy.scep-auth.name]
 }

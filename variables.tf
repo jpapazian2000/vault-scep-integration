@@ -6,4 +6,9 @@ variable "vault_addr" {
 variable "scep_password" {
     type = string
     default = "test-scep-challenge"
+    sensitive = true
+}
+variable "vault_scep_namespace" {
+    type = string
+    default = "scep"
 }

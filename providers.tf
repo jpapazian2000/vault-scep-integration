@@ -1,3 +1,3 @@
 provider "vault" {
-    address = "${var.vault_addr}"
+    address = var.vault_addr
 }
