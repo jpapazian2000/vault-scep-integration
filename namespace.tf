@@ -1,3 +1,3 @@
 resource "vault_namespace" "scep-example" {
-  path = "scep"
+  path = var.vault_scep_namespace
 }

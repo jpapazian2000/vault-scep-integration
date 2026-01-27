@@ -28,13 +28,13 @@ resource "vault_policy" "scep-auth" {
 path "pki_int/scep" {
   capabilities=["read", "update", "create"]
 }
-path "pki_int/roles/scep-clients/scep" {
+path "pki_int/roles/scep-role/scep" {
   capabilities=["read", "update", "create"]
 }
 path "pki_int/scep/pkiclient.exe" {
   capabilities=["read", "update", "create"]
 }
-path "pki_int/roles/scep-clients/scep/pkiclient.exe" {
+path "pki_int/roles/scep-role/scep/pkiclient.exe" {
   capabilities=["read", "update", "create"]
 }
 EOT
